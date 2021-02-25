@@ -1,9 +1,9 @@
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
-import os
-import json
 import requests
-import urllib.request 
+import multiprocessing
+import master as m
+
 
 
 
@@ -15,14 +15,8 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
 with SimpleXMLRPCServer(('localhost', 9000),
     requestHandler=RequestHandler) as server:
     server.register_introspection_functions()
-
     
-    # Register a function under a different name
-    def show_act_dir():
-        return os.getcwd()
-    
-    server.register_function(show_act_dir, 'dir')
-
+    master=m.Master("localhost","6379")
 
     def counting_words(text):
         return len(text.split(" "))
@@ -42,3 +36,9 @@ with SimpleXMLRPCServer(('localhost', 9000),
 
     # Run the server's main loop
     server.serve_forever()
+
+    def recive_url(url_task):
+        master.recive_url(url_task)
+    
+
+  
