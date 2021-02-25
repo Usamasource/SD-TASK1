@@ -1,7 +1,7 @@
    
 import redis
 import multiprocessing
-class Master:
+
     WORKERS = {}
     WORKER_ID = 0
 
@@ -30,5 +30,9 @@ class Master:
         global WORKER_ID
         WORKERS.remove(WORKER_ID)
         WORKERS_ID=-1
+    
+    def send_url(self, url_task):
+        job=self.redis_queue.enqueue("words_at_url", url_task)
+        print(job.result)
         
     
