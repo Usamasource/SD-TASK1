@@ -25,14 +25,17 @@ class Master():
     def start_worker(self):
             task=self.redis_connection.blpop(['queue:tasks'], 0)
             if task:
-                data=task[1].split(" ")
-                print(data)
-                text=requests.get(task[1]).text
+                data=str(task[1]).split(" ")
+                print(data[0])
+                print(data[1])
+                text=requests.get(data[1]).text
                 if data[0] is "wordcount":
                     result=self.word_count(text)
+                    print(result)
                 if data[0] is "countwords":
                     result=self.counting_words(text)
-                return result
+                    print(result)
+                
 
     @app.route('/create')
     def create_worker(self):
@@ -60,7 +63,7 @@ class Master():
             print(WORKERS.index(worker))
 
     def send_url(self, url, task):
-        job=self.redis_connection.rpush('queue:tasks', task+url)
+        job=self.redis_connection.rpush('queue:tasks', task+" "+url)
 
     def counting_words(text):
         return len(text.split())
