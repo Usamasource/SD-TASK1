@@ -29,6 +29,7 @@ class Master():
                 data=requests.get(task[1]).text
                 n_words=counting_words(data)
                 words_frequency=word_count(data)
+                self.tasks[task[1]]=[]
                 self.tasks[task[1]].append(n_words)
                 self.tasks[task[1]].append(words_frequency)
 
