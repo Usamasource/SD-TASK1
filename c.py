@@ -30,6 +30,6 @@ def job(job_run, wordcount, countwords):
         print(wordcount)
         if wordcount is not None:
             s.send_url(wordcount)
-            print(s.get_result())
+            print(s.get_result(wordcount))
 
 cli()
