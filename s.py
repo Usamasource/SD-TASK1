@@ -29,15 +29,14 @@ class Master():
                 data=requests.get(task[1]).text
                 n_words=counting_words(data)
                 words_frequency=word_count(data)
-                tasks.setdefault(task[1], [])
-                a[task[1]].append(n_words)
-                a[task[1]].append(words_frequency)
+                self.tasks[task[1]].append(n_words)
+                self.tasks[task[1]].append(words_frequency)
 
     @app.route('/create')
     def create_worker(self):
         global WORKERS
         global WORKER_ID
-
+       
         proc = Process(target=master.start_worker, args=(counting_words, word_count))
         proc.start()
 
@@ -77,7 +76,7 @@ def word_count(text):
 
 
 def create_w(n_workers):
-    print("Creating "+n_workers+"...")
+    print("Creating "+str(n_workers)+"...")
     for i in range(n_workers):
         master.create_worker()
 
@@ -85,6 +84,9 @@ def delete_w(n_workers):
     print("Removing "+n_workers+"...")
     for i in range(n_workers):
         master.delete_worker()
+
+def get_result(url):
+    return master.tasks[url]
 
 # Ceate server
 server=SimpleXMLRPCServer(('localhost', 9000),
@@ -99,8 +101,8 @@ server.register_multicall_functions()
 server.register_instance(master)
 server.register_function(create_w, 'create_w')
 server.register_function(delete_w, 'delete_w')
-server.register_function(counting_words, 'count_words')
-server.register_function(word_count, 'word_count')
+server.register_function(create_w, 'create_w')
+server.register_function(get_result, 'get_result')
 
 # Run the server's main loop
 try:

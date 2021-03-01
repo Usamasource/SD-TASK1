@@ -5,8 +5,12 @@ import click
 
 s = xmlrpc.client.ServerProxy('http://localhost:9000')
 
-@click.command()
-@click.argument('worker', required=False)
+@click.group()
+def cli():
+    None
+
+@cli.command()
+@click.argument('worker')
 @click.option('--create', type=click.INT)
 @click.option('--delete', type=click.INT)
 def worker(worker, create, delete):
@@ -16,17 +20,16 @@ def worker(worker, create, delete):
         if delete is not None:
             s.delete_w(create)
 
-@click.command()
-@click.argument('job')
-@click.option('--run')
+
+@cli.command()
+@click.argument('job_run')
 @click.option('--wordcount')
 @click.option('--countwords')
-def job(job, run, wordcount, countwords):
+def job(job_run, wordcount, countwords):
     if job is not None:
-        if run is not None:
-            if wordcount is not None:
-                s.send_url(wordcount)
-                server.master.tasks[wordcount]
+        print(wordcount)
+        if wordcount is not None:
+            s.send_url(wordcount)
+            print(s.get_result())
 
-worker()
-s.send_url("http://localhost:8000/hola.txt")
+cli()
