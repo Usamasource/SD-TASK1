@@ -28,10 +28,10 @@ class Master():
             task=json.loads(self.redis_connection.rpop('queue:tasks'))
             if task:
                 if task[0] == 'wordcount':
-                    result=self.word_count(task[1])
+                    result=self.word_count(requests.get(task[1]).text)
                     print(result)
                 if task[0] == 'countwords':
-                    result=self.counting_words(task[1])
+                    result=self.counting_words(requests.get(task[1]).text)
                     print(result)
                 
 
@@ -74,12 +74,12 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/','/RPC2')
 
 def create_w(n_workers):
-    print("Creating "+str(n_workers)+"...")
+    print("Creating "+str(n_workers)+"workers...")
     for i in range(n_workers):
         master.create_worker()
 
 def delete_w(n_workers):
-    print("Removing "+str(n_workers)+"...")
+    print("Removing "+str(n_workers)+"workers...")
     for i in range(n_workers):
         master.delete_worker()
 
