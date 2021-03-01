@@ -1,8 +1,9 @@
 import redis
 
-def enqueue_url(url):
+def enqueue_url(f,url):
    data = {
-       'url' = url
+      'function' = f 
+      'url' = url
    }
 
    
