@@ -22,23 +22,24 @@ class Master():
         )
 
     @app.route('/start_worker')
-    def start_worker(self, funct1, funct2):
-        while(1):
+    def start_worker(self):
             task=self.redis_connection.blpop(['queue:tasks'], 0)
             if task:
-                data=requests.get(task[1]).text
-                n_words=counting_words(data)
-                words_frequency=word_count(data)
-                self.tasks[task[1]]=[]
-                self.tasks[task[1]].append(n_words)
-                self.tasks[task[1]].append(words_frequency)
+                data=task[1].split(" ")
+                print(data)
+                text=requests.get(task[1]).text
+                if data[0] is "wordcount":
+                    result=self.word_count(text)
+                if data[0] is "countwords":
+                    result=self.counting_words(text)
+                return result
 
     @app.route('/create')
     def create_worker(self):
         global WORKERS
         global WORKER_ID
        
-        proc = Process(target=master.start_worker, args=(counting_words, word_count))
+        proc = Process(target=master.start_worker)
         proc.start()
 
         master.WORKERS[master.WORKER_ID]=proc
@@ -50,6 +51,7 @@ class Master():
         global WORKER_ID
 
         WORKERS.remove(WORKER_ID)
+        
         WORKERS_ID=-1
     
     def list_workers(self):
@@ -57,24 +59,22 @@ class Master():
             print(worker.getpid())
             print(WORKERS.index(worker))
 
-    def send_url(self, url_task):
-        job=self.redis_connection.rpush('queue:tasks', url_task)
+    def send_url(self, url, task):
+        job=self.redis_connection.rpush('queue:tasks', task+url)
+
+    def counting_words(text):
+        return len(text.split())
+
+    def word_count(text):
+        word_frequencies=[]
+        words_list=text.split()
+        for word in words_list:
+            word_frequencies.append(words_list.count(word))
+        return word_frequencies
 
 # Restrict to a particular path.
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/','/RPC2')
-
-    
-def counting_words(text):
-    return len(text.split())
-
-def word_count(text):
-    word_frequencies=[]
-    words_list=text.split()
-    for word in words_list:
-        word_frequencies.append(words_list.count(word))
-    return word_frequencies
-
 
 def create_w(n_workers):
     print("Creating "+str(n_workers)+"...")
@@ -86,8 +86,9 @@ def delete_w(n_workers):
     for i in range(n_workers):
         master.delete_worker()
 
+
 def get_result(url):
-    return master.tasks[url]
+    return master.tasks[url][0]
 
 # Ceate server
 server=SimpleXMLRPCServer(('localhost', 9000),
@@ -102,7 +103,6 @@ server.register_multicall_functions()
 server.register_instance(master)
 server.register_function(create_w, 'create_w')
 server.register_function(delete_w, 'delete_w')
-server.register_function(create_w, 'create_w')
 server.register_function(get_result, 'get_result')
 
 # Run the server's main loop

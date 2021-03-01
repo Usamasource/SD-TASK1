@@ -29,7 +29,6 @@ def job(job_run, wordcount, countwords):
     if job is not None:
         print(wordcount)
         if wordcount is not None:
-            s.send_url(wordcount)
-            print(s.get_result(wordcount))
+            print(s.send_url(wordcount, "wordcount"))
 
 cli()
