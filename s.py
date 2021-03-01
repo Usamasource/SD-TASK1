@@ -2,6 +2,7 @@
 
 import os
 import redis
+import json
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
 import requests
@@ -24,19 +25,13 @@ class Master():
     @app.route('/start_worker')
     def start_worker(self):
         while(self.redis_connection.llen('queue:tasks')!=0):
-            task=self.redis_connection.rpop('queue:tasks')
-            print(task)
+            task=json.loads(self.redis_connection.rpop('queue:tasks'))
             if task:
-                data=str(task).split(" ")
-                print(data)
-                text=requests.get(data[1].replace("'", "")).text
-                funct=data[0].replace("'", "")
-                funct=funct.replace("b", "")
-                if funct == 'wordcount':
-                    result=self.word_count(text)
+                if task[0] == 'wordcount':
+                    result=self.word_count(task[1])
                     print(result)
-                if funct == 'countwords':
-                    result=self.counting_words(text)
+                if task[0] == 'countwords':
+                    result=self.counting_words(task[1])
                     print(result)
                 
 
@@ -62,9 +57,7 @@ class Master():
 
     def send_url(self, urls, task):
         for url in urls:
-            print("task "+task)
-            print("url "+url)
-            job=self.redis_connection.rpush('queue:tasks', task+" "+url)
+            job=self.redis_connection.rpush('queue:tasks', json.dumps([task, url]))
 
     def counting_words(self, text):
         return len(text.split())
@@ -90,10 +83,6 @@ def delete_w(n_workers):
     for i in range(n_workers):
         master.delete_worker()
 
-
-def get_result(url):
-    return master.tasks[url][0]
-
 # Ceate server
 server=SimpleXMLRPCServer(('localhost', 9000),
     requestHandler=RequestHandler,
@@ -107,7 +96,6 @@ server.register_multicall_functions()
 server.register_instance(master)
 server.register_function(create_w, 'create_w')
 server.register_function(delete_w, 'delete_w')
-server.register_function(get_result, 'get_result')
 
 # Run the server's main loop
 try:
