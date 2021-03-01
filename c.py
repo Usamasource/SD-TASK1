@@ -18,17 +18,18 @@ def worker(worker, create, delete):
         if create is not None:
             s.create_w(create)
         if delete is not None:
-            s.delete_w(create)
+            s.delete_w(delete)
 
 
 @cli.command()
 @click.argument('job_run')
-@click.option('--wordcount')
-@click.option('--countwords')
+@click.option('--wordcount', multiple=True)
+@click.option('--countwords', multiple=True)
 def job(job_run, wordcount, countwords):
     if job is not None:
-        print(wordcount)
         if wordcount is not None:
-            print(s.send_url(wordcount, "wordcount"))
+            s.send_url(wordcount, 'wordcount')
+        if countwords is not None:
+            s.send_url(countwords, 'countwords')
 
 cli()
