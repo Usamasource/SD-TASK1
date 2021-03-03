@@ -6,7 +6,7 @@ import json
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
 import requests
-from multiprocessing import Process
+import multiprocessing
 from flask import Flask
 
 app = Flask(__name__)
@@ -14,7 +14,8 @@ app = Flask(__name__)
 class Master():
     WORKERS = {}
     WORKER_ID = 0
-    tasks={}
+    TASKS = {}
+    TASK_ID = 0
 
     def __init__(self,ip,port):
         self.redis_connection=redis.Redis(
@@ -29,15 +30,14 @@ class Master():
             if task:
                 if task[0] == 'wordcount':
                     result=self.word_count(requests.get(task[1]).text)
-                    print(result)
                 if task[0] == 'countwords':
                     result=self.counting_words(requests.get(task[1]).text)
-                    print(result)
-                
+                self.TASKS[task[2]]=result
+                print(self.TASKS)
 
     @app.route('/create')
     def create_worker(self):
-        proc = Process(target=master.start_worker)
+        proc =multiprocessing.Process(target=master.start_worker)
         proc.start()
 
         master.WORKERS[master.WORKER_ID]=proc
@@ -56,8 +56,17 @@ class Master():
             print(WORKERS.index(worker))
 
     def send_url(self, urls, task):
+        ids=[]
         for url in urls:
-            job=self.redis_connection.rpush('queue:tasks', json.dumps([task, url]))
+            job=self.redis_connection.rpush('queue:tasks', json.dumps([task, url, self.TASK_ID]))
+            ids.append(self.TASK_ID)
+            self.TASK_ID+=1
+        return ids
+    
+    def get_result(self, id):
+        while not self.TASKS:
+            None
+        return self.TASKS[id]
 
     def counting_words(self, text):
         return len(text.split())
@@ -74,12 +83,12 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/','/RPC2')
 
 def create_w(n_workers):
-    print("Creating "+str(n_workers)+"workers...")
+    print("Creating "+str(n_workers)+" workers...")
     for i in range(n_workers):
         master.create_worker()
 
 def delete_w(n_workers):
-    print("Removing "+str(n_workers)+"workers...")
+    print("Removing "+str(n_workers)+" workers...")
     for i in range(n_workers):
         master.delete_worker()
 

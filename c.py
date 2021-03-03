@@ -28,8 +28,14 @@ def worker(worker, create, delete):
 def job(job_run, wordcount, countwords):
     if job is not None:
         if wordcount is not None:
-            s.send_url(wordcount, 'wordcount')
+            print(s.send_url(wordcount, 'wordcount'))
         if countwords is not None:
-            s.send_url(countwords, 'countwords')
+            result=s.send_url(countwords, 'countwords')
+            print(result)
+            get_result(result)
+        
+def get_result(ids):
+    for id in ids:
+        print(s.get_result(id))
 
 cli()
