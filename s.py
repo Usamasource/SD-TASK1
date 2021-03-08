@@ -12,16 +12,16 @@ from flask import Flask
 app = Flask(__name__)
 
 class Master():
-    WORKERS = {}
-    WORKER_ID = 0
-    TASKS = {}
-    TASK_ID = 0
 
     def __init__(self,ip,port):
         self.redis_connection=redis.Redis(
             host=os.getenv("REDIS_HOST", ip),
             port=os.getenv("REDIS_PORT", port),
         )
+        self.TASKS={}
+        self.TASK_ID=0
+        self.WORKERS = {}
+        self.WORKER_ID = 0
 
     @app.route('/start_worker')
     def start_worker(self):
@@ -33,7 +33,29 @@ class Master():
                 if task[0] == 'countwords':
                     result=self.counting_words(requests.get(task[1]).text)
                 self.TASKS[task[2]]=result
-                print(self.TASKS)
+                self.write_dictionary(self.TASKS)
+
+    def write_dictionary(self, dict):
+        print(dict)
+        j=json.dumps(dict)
+        f=open("results.csv","w")
+        f.write(j)
+        f.close
+    
+    def read_dictionary(self):
+        with open('results.csv') as f:
+            data=json.load(f)
+        return data
+    
+    def get_result(self, ids):
+        result={}
+        dictionary=self.read_dictionary()
+        for id in ids:
+            if dictionary.get(id) != None:
+                result[id].append(dictionary.get(id))
+                print("hola")
+        print(result)    
+        return result
 
     @app.route('/create')
     def create_worker(self):
@@ -54,7 +76,7 @@ class Master():
         for worker in self.WORKERS:
             print(worker.getpid())
             print(WORKERS.index(worker))
-
+        
     def send_url(self, urls, task):
         ids=[]
         for url in urls:
@@ -62,11 +84,6 @@ class Master():
             ids.append(self.TASK_ID)
             self.TASK_ID+=1
         return ids
-    
-    def get_result(self, id):
-        while not self.TASKS:
-            None
-        return self.TASKS[id]
 
     def counting_words(self, text):
         return len(text.split())
@@ -100,8 +117,8 @@ server=SimpleXMLRPCServer(('localhost', 9000),
 
 master=Master("localhost","6379")
 
-server.register_introspection_functions
 server.register_multicall_functions()
+server.register_introspection_functions
 server.register_instance(master)
 server.register_function(create_w, 'create_w')
 server.register_function(delete_w, 'delete_w')

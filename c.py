@@ -2,8 +2,10 @@ import xmlrpc.client
 import requests
 import sys
 import click
+from logging import ERROR
 
 s = xmlrpc.client.ServerProxy('http://localhost:9000')
+multicall=xmlrpc.client.MultiCall(s)
 
 @click.group()
 def cli():
@@ -28,14 +30,9 @@ def worker(worker, create, delete):
 def job(job_run, wordcount, countwords):
     if job is not None:
         if wordcount is not None:
-            print(s.send_url(wordcount, 'wordcount'))
-        if countwords is not None:
-            result=s.send_url(countwords, 'countwords')
-            print(result)
-            get_result(result)
-        
-def get_result(ids):
-    for id in ids:
-        print(s.get_result(id))
+            ids=s.send_url(wordcount, 'wordcount')
+        if countwords is "()":
+            ids=s.send_url(countwords, 'countwords')
+        print(s.get_result(ids))
 
 cli()
