@@ -5,7 +5,6 @@ import click
 from logging import ERROR
 
 s = xmlrpc.client.ServerProxy('http://localhost:9000')
-multicall=xmlrpc.client.MultiCall(s)
 
 @click.group()
 def cli():
@@ -29,10 +28,13 @@ def worker(worker, create, delete):
 @click.option('--countwords', multiple=True)
 def job(job_run, wordcount, countwords):
     if job is not None:
+        print(wordcount)
+        print(countwords)
         if wordcount is not None:
             ids=s.send_url(wordcount, 'wordcount')
-        if countwords is "()":
+        if countwords is not "()":
             ids=s.send_url(countwords, 'countwords')
         print(s.get_result(ids))
+
 
 cli()

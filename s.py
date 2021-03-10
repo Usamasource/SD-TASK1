@@ -27,6 +27,7 @@ class Master():
     def start_worker(self):
         while(self.redis_connection.llen('queue:tasks')!=0):
             task=json.loads(self.redis_connection.rpop('queue:tasks'))
+            print(task[0])
             if task:
                 if task[0] == 'wordcount':
                     result=self.word_count(requests.get(task[1]).text)
@@ -36,7 +37,6 @@ class Master():
                 self.write_dictionary(self.TASKS)
 
     def write_dictionary(self, dict):
-        print(dict)
         j=json.dumps(dict)
         f=open("results.csv","w")
         f.write(j)
@@ -50,11 +50,10 @@ class Master():
     def get_result(self, ids):
         result={}
         dictionary=self.read_dictionary()
+        keys=dictionary.keys()
+        dictionary={key: dictionary[key] for key in keys}
         for id in ids:
-            if dictionary.get(id) != None:
-                result[id].append(dictionary.get(id))
-                print("hola")
-        print(result)    
+            result[str(id)]=dictionary.get(str(id))  
         return result
 
     @app.route('/create')
@@ -79,7 +78,9 @@ class Master():
         
     def send_url(self, urls, task):
         ids=[]
+        print(urls)
         for url in urls:
+            print(url)
             job=self.redis_connection.rpush('queue:tasks', json.dumps([task, url, self.TASK_ID]))
             ids.append(self.TASK_ID)
             self.TASK_ID+=1
@@ -89,10 +90,10 @@ class Master():
         return len(text.split())
 
     def word_count(self, text):
-        word_frequencies=[]
+        word_frequencies={}
         words_list=text.split()
         for word in words_list:
-            word_frequencies.append(words_list.count(word))
+            word_frequencies[word]=words_list.count(word)
         return word_frequencies
 
 # Restrict to a particular path.
