@@ -27,13 +27,15 @@ def worker(worker, create, delete):
 @click.option('--wordcount', multiple=True)
 @click.option('--countwords', multiple=True)
 def job(job_run, wordcount, countwords):
+    ids=[]
     if job is not None:
-        print(wordcount)
-        print(countwords)
-        if wordcount is not None:
-            ids=s.send_url(wordcount, 'wordcount')
+        if wordcount is not "()":
+            for i in s.send_url(wordcount, 'wordcount'):
+                ids.append(i)
         if countwords is not "()":
-            ids=s.send_url(countwords, 'countwords')
+            for i in s.send_url(countwords, 'countwords'):
+                ids.append(i)
+        print(ids)
         print(s.get_result(ids))
 
 

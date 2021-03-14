@@ -8,6 +8,7 @@ from xmlrpc.server import SimpleXMLRPCRequestHandler
 import requests
 import multiprocessing
 from flask import Flask
+import time
 
 app = Flask(__name__)
 
@@ -25,16 +26,19 @@ class Master():
 
     @app.route('/start_worker')
     def start_worker(self):
-        while(self.redis_connection.llen('queue:tasks')!=0):
-            task=json.loads(self.redis_connection.rpop('queue:tasks'))
-            print(task[0])
+        while True:
+            task=self.redis_connection.rpop('queue:tasks')
             if task:
-                if task[0] == 'wordcount':
-                    result=self.word_count(requests.get(task[1]).text)
-                if task[0] == 'countwords':
-                    result=self.counting_words(requests.get(task[1]).text)
-                self.TASKS[task[2]]=result
-                self.write_dictionary(self.TASKS)
+                task=json.loads(task)
+                print("tarea desencolada: "+ task[0])
+                if task:
+                    if task[0] == 'wordcount':
+                        result=self.word_count(requests.get(task[1]).text)
+                    if task[0] == 'countwords':
+                        result=self.counting_words(requests.get(task[1]).text)
+                        print("resultado ejecucion: "+str(result))
+                    self.TASKS[task[2]]=result
+                    self.write_dictionary(self.TASKS)
 
     def write_dictionary(self, dict):
         j=json.dumps(dict)
@@ -43,17 +47,22 @@ class Master():
         f.close
     
     def read_dictionary(self):
+        time.sleep(2)
         with open('results.csv') as f:
             data=json.load(f)
         return data
     
     def get_result(self, ids):
         result={}
-        dictionary=self.read_dictionary()
-        keys=dictionary.keys()
-        dictionary={key: dictionary[key] for key in keys}
+        ##keys=dictionary.keys()
+        ##dictionary={key: dictionary[key] for key in keys}
         for id in ids:
-            result[str(id)]=dictionary.get(str(id))  
+            print("id peticion: "+str(id))
+            print(self.read_dictionary())
+            while self.read_dictionary()[str(id)] is None:
+                None
+            result[str(id)]=self.read_dictionary()[str(id)]
+            print("resultado respuesta: "+str(result))
         return result
 
     @app.route('/create')
@@ -78,11 +87,11 @@ class Master():
         
     def send_url(self, urls, task):
         ids=[]
-        print(urls)
         for url in urls:
-            print(url)
+            print("url enviada: "+url)
             job=self.redis_connection.rpush('queue:tasks', json.dumps([task, url, self.TASK_ID]))
             ids.append(self.TASK_ID)
+            print("id de la url enviada: "+str(self.TASK_ID))
             self.TASK_ID+=1
         return ids
 
