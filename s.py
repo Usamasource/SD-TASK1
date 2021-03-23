@@ -23,7 +23,8 @@ class Master():
         self.TASK_ID=0
         self.WORKERS ={}
         self.WORKER_ID = 0
-        self.RESULTS={}
+        self.RESULTS = multiprocessing.Manager().dict()
+        self.RESULTS_CONT = 0
 
  
 
@@ -56,6 +57,7 @@ class Master():
             if result:
                 task=json.loads(result)
                 self.RESULTS[task[1]]=task[0]
+                self.RESULTS_CONT=+1
 
     @app.route('/create')
     def create_worker(self):
