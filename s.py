@@ -23,6 +23,7 @@ class Master():
         self.TASK_ID=0
         self.WORKERS = {}
         self.WORKER_ID = 0
+        self.RESULTS={}
 
     @app.route('/start_worker')
     def start_worker(self):
@@ -38,36 +39,22 @@ class Master():
                         result=self.counting_words(requests.get(task[1]).text)
                         print("resultado ejecucion: "+str(result))
                     self.TASKS[task[2]]=result
-                    self.write_dictionary(self.TASKS)
+                    self.return_result(result, task[2])
+    
+    def return_result(self, result, id):
+        self.redis_connection.rpush('queue:results', json.dumps([result, id]))
 
-    def write_dictionary(self, dict):
-        j=json.dumps(dict)
-        f=open("results.csv","w")
-        f.write(j)
-        f.close
-    
-    def read_dictionary(self):
-        time.sleep(2)
-        with open('results.csv') as f:
-            data=json.load(f)
-        return data
-    
-    def get_result(self, ids):
-        result={}
-        ##keys=dictionary.keys()
-        ##dictionary={key: dictionary[key] for key in keys}
-        for id in ids:
-            print("id peticion: "+str(id))
-            print(self.read_dictionary())
-            while self.read_dictionary()[str(id)] is None:
-                None
-            result[str(id)]=self.read_dictionary()[str(id)]
-            print("resultado respuesta: "+str(result))
-        return result
+    def read_redis_results(self):
+        while True:
+            result=self.redis_connection.rpop('queue:results')
+            if result:
+                task=json.loads(result)
+                self.RESULTS[task[1]]=task[0]
+                print(self.RESULTS)
 
     @app.route('/create')
     def create_worker(self):
-        proc =multiprocessing.Process(target=master.start_worker)
+        proc=multiprocessing.Process(target=master.start_worker)
         proc.start()
 
         master.WORKERS[master.WORKER_ID]=proc
@@ -79,11 +66,11 @@ class Master():
             master.WORKERS[master.WORKER_ID].terminate()
         master.WORKERS[master.WORKER_ID]=None
         master.WORKERS_ID=-1
-    
+
     def list_workers(self):
         for worker in self.WORKERS:
             print(worker.getpid())
-            print(WORKERS.index(worker))
+            print(self.WORKERS[worker])
         
     def send_url(self, urls, task):
         ids=[]
@@ -119,6 +106,16 @@ def delete_w(n_workers):
     for i in range(n_workers):
         master.delete_worker()
 
+def get_result(ids):
+    r={}
+    print(ids)
+    for id in ids:
+        while(master.RESULTS.get(id) is None):
+            print(master.RESULTS)
+            time.sleep(1)
+        r[id]=master.RESULTS.get(id)
+    return r
+
 # Ceate server
 server=SimpleXMLRPCServer(('localhost', 9000),
     requestHandler=RequestHandler,
@@ -126,12 +123,15 @@ server=SimpleXMLRPCServer(('localhost', 9000),
     allow_none=True)
 
 master=Master("localhost","6379")
+results_process=multiprocessing.Process(target=master.read_redis_results)
+results_process.start()
 
 server.register_multicall_functions()
 server.register_introspection_functions
 server.register_instance(master)
 server.register_function(create_w, 'create_w')
 server.register_function(delete_w, 'delete_w')
+server.register_function(get_result, 'get_result')
 
 # Run the server's main loop
 try:
