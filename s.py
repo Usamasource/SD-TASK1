@@ -21,15 +21,10 @@ class Master():
         )
         self.TASKS={}
         self.TASK_ID=0
-        self.WORKERS ={}
+        self.WORKERS = {}
         self.WORKER_ID = 0
-        self.RESULTS = multiprocessing.Manager().dict()
-        self.RESULTS_CONT = 0
+        self.RESULTS={}
 
- 
-
-   
-    
     @app.route('/start_worker')
     def start_worker(self):
         while True:
@@ -45,34 +40,32 @@ class Master():
                         print("resultado ejecucion: "+str(result))
                     self.TASKS[task[2]]=result
                     self.return_result(result, task[2])
-
+    
     def return_result(self, result, id):
         self.redis_connection.rpush('queue:results', json.dumps([result, id]))
 
     def read_redis_results(self):
-        print("helloworlds")
         while True:
-            time.sleep(1.0)
             result=self.redis_connection.rpop('queue:results')
             if result:
                 task=json.loads(result)
                 self.RESULTS[task[1]]=task[0]
-                self.RESULTS_CONT=+1
+                print(self.RESULTS)
 
     @app.route('/create')
     def create_worker(self):
-        proc=multiprocessing.Process(target=self.start_worker)
+        proc=multiprocessing.Process(target=master.start_worker)
         proc.start()
 
-        self.WORKERS[self.WORKER_ID]=proc
-        self.WORKER_ID=+1
+        master.WORKERS[master.WORKER_ID]=proc
+        master.WORKER_ID=+1
 
     @app.route('/delete')
     def delete_worker(self):
-        if self.WORKERS[self.WORKER_ID].is_alive():
-            self.WORKERS[self.WORKER_ID].terminate()
-        self.WORKERS[self.WORKER_ID]=None
-        self.WORKERS_ID=-1
+        if master.WORKERS[master.WORKER_ID].is_alive():
+            master.WORKERS[master.WORKER_ID].terminate()
+        master.WORKERS[master.WORKER_ID]=None
+        master.WORKERS_ID=-1
 
     def list_workers(self):
         for worker in self.WORKERS:
@@ -98,16 +91,6 @@ class Master():
         for word in words_list:
             word_frequencies[word]=words_list.count(word)
         return word_frequencies
-     
-    def getResults(self):
-        return str(self.RESULTS)
-
-
-
-
-#@Fuera de la clase
-
-master=Master("localhost","6379")
 
 # Restrict to a particular path.
 class RequestHandler(SimpleXMLRPCRequestHandler):
@@ -123,11 +106,15 @@ def delete_w(n_workers):
     for i in range(n_workers):
         master.delete_worker()
 
-
-
 def get_result(ids):
-    return master.getResults()
-
+    r={}
+    print(ids)
+    for id in ids:
+        while(master.RESULTS.get(id) is None):
+            print(master.RESULTS)
+            time.sleep(1)
+        r[id]=master.RESULTS.get(id)
+    return r
 
 # Ceate server
 server=SimpleXMLRPCServer(('localhost', 9000),
@@ -135,7 +122,7 @@ server=SimpleXMLRPCServer(('localhost', 9000),
     logRequests=True,
     allow_none=True)
 
-
+master=Master("localhost","6379")
 results_process=multiprocessing.Process(target=master.read_redis_results)
 results_process.start()
 
