@@ -15,10 +15,10 @@ def cli():
 @click.option('--create', type=click.INT)
 @click.option('--delete', type=click.INT)
 def worker(worker, create, delete):
-    if worker is not None:
-        if create is not None:
+    if worker != None:
+        if create != None:
             s.create_w(create)
-        if delete is not None:
+        if delete != None:
             s.delete_w(delete)
 
 
@@ -28,11 +28,11 @@ def worker(worker, create, delete):
 @click.option('--countwords', multiple=True)
 def job(job_run, wordcount, countwords):
     ids=[]
-    if job is not None:
-        if wordcount is not "()":
+    if job != None:
+        if wordcount != "()":
             for i in s.send_url(wordcount, 'wordcount'):
                 ids.append(i)
-        if countwords is not "()":
+        if countwords != "()":
             for i in s.send_url(countwords, 'countwords'):
                 ids.append(i)
         print(ids)
