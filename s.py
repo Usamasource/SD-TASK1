@@ -7,12 +7,22 @@ from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
 import requests
 import multiprocessing
-from flask import Flask
+from flask import Flask, render_template
 import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+import collections, functools, operator
+from collections import defaultdict
+from collections import Iterable
+
 
 app = Flask(__name__)
 
 class Master():
+
+    @app.route('/')
+    def index():
+        return render_template('frontend/index.html')
 
     def __init__(self,ip,port):
         self.redis_connection=redis.Redis(
@@ -21,9 +31,10 @@ class Master():
         )
         self.TASKS={}
         self.TASK_ID=0
-        self.WORKERS = {}
+        self.WORKERS ={}
         self.WORKER_ID = 0
-        self.RESULTS={}
+        self.RESULTS = multiprocessing.Manager().dict()
+        self.RESULTS_CONT = 0
 
     @app.route('/start_worker')
     def start_worker(self):
@@ -33,39 +44,44 @@ class Master():
                 task=json.loads(task)
                 print("tarea desencolada: "+ task[0])
                 if task:
+                    session = requests.Session()
+                    retry = Retry(connect=3, backoff_factor=0.5)
+                    adapter = HTTPAdapter(max_retries=retry)
+                    session.mount('http://', adapter)
                     if task[0] == 'wordcount':
-                        result=self.word_count(requests.get(task[1]).text)
+                        result=self.word_count(session.get(task[1]).text)
                     if task[0] == 'countwords':
-                        result=self.counting_words(requests.get(task[1]).text)
+                        result=self.counting_words(session.get(task[1]).text)
                         print("resultado ejecucion: "+str(result))
-                    self.TASKS[task[2]]=result
                     self.return_result(result, task[2])
-    
+
     def return_result(self, result, id):
         self.redis_connection.rpush('queue:results', json.dumps([result, id]))
 
     def read_redis_results(self):
         while True:
+            time.sleep(1.0)
             result=self.redis_connection.rpop('queue:results')
             if result:
                 task=json.loads(result)
                 self.RESULTS[task[1]]=task[0]
-                print(self.RESULTS)
+                self.RESULTS_CONT=+1
 
-    @app.route('/create')
+    @app.route('/create/')
     def create_worker(self):
-        proc=multiprocessing.Process(target=master.start_worker)
+        proc=multiprocessing.Process(target=self.start_worker)
         proc.start()
 
-        master.WORKERS[master.WORKER_ID]=proc
-        master.WORKER_ID=+1
+        self.WORKERS[self.WORKER_ID]=proc
+        self.WORKER_ID=+1
 
     @app.route('/delete')
     def delete_worker(self):
-        if master.WORKERS[master.WORKER_ID].is_alive():
-            master.WORKERS[master.WORKER_ID].terminate()
-        master.WORKERS[master.WORKER_ID]=None
-        master.WORKERS_ID=-1
+        if master.WORKERS[master.WORKER_ID] is not None:
+            if master.WORKERS[master.WORKER_ID].is_alive():
+                master.WORKERS[master.WORKER_ID].terminate()
+            master.WORKERS[master.WORKER_ID]=None
+            master.WORKERS_ID=-1
 
     def list_workers(self):
         for worker in self.WORKERS:
@@ -92,6 +108,13 @@ class Master():
             word_frequencies[word]=words_list.count(word)
         return word_frequencies
 
+
+
+
+# Fuera de la clase
+
+master=Master("localhost","6379")
+
 # Restrict to a particular path.
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/','/RPC2')
@@ -107,14 +130,26 @@ def delete_w(n_workers):
         master.delete_worker()
 
 def get_result(ids):
-    r={}
-    print(ids)
+    results=[]
+
     for id in ids:
         while(master.RESULTS.get(id) is None):
-            print(master.RESULTS)
             time.sleep(1)
-        r[id]=master.RESULTS.get(id)
-    return r
+        results.append(master.RESULTS.get(id))
+
+    reduced=defaultdict(int)
+    for result in results:
+        if isinstance(result, Iterable):
+            for k in result:
+                reduced[k]+=result.get(k)
+                print(k)
+                print(reduced[k])
+            print(reduced)
+        else:
+            reduced[str(result)]+=result
+    return dict(reduced)
+
+
 
 # Ceate server
 server=SimpleXMLRPCServer(('localhost', 9000),
@@ -122,7 +157,7 @@ server=SimpleXMLRPCServer(('localhost', 9000),
     logRequests=True,
     allow_none=True)
 
-master=Master("localhost","6379")
+
 results_process=multiprocessing.Process(target=master.read_redis_results)
 results_process.start()
 
