@@ -85,7 +85,7 @@ class Master():
 
     def list_workers(self):
         for worker in self.WORKERS:
-            print(worker.getpid())
+            print(worker)
             print(self.WORKERS[worker])
         
     def send_url(self, urls, task):
