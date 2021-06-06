@@ -30,12 +30,10 @@ Per usar el cluster cal:
 
 ```bash
 python3 c.py worker --create 2 WORKER
-
+python3 c.py job --wordcount http://localhost:8000/hola1.txt JOB_RUN
 ```
-## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Please make sure to update tests as appropriate.
+Primerament creem el nombre de workers que volguem per després trucar al procediment que volem executar sobre el fitxer .txt que volguem executar.
 
-## License
+## Licencia
 [MIT](https://choosealicense.com/licenses/mit/)
