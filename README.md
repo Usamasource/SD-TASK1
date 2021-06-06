@@ -1,10 +1,10 @@
-# PRACTICA 1 SD
+# PRÀCTICA 1 SD
 
 Cluster
 
 ## Requisits
 
-Son necesaris Python, Pip i Redis per poder fer la instalació correctament
+Són necessaris Python, Pip i Redis per poder fer la instalació correctament.
 
 ## Instalació
 
@@ -28,11 +28,11 @@ python3 handler.py
 Per usar el cluster cal:
 
 ```bash
-python3 c.py worker --create 2 WORKER
-python3 c.py job --wordcount http://localhost:8000/hola1.txt JOB_RUN
+python3 c.py worker --create [n_workers] WORKER
+python3 c.py job --wordcount [fitxer] JOB_RUN
 ```
 
-Primerament creem el nombre de workers que volguem per després trucar al procediment que volem executar sobre el fitxer .txt que volguem executar.
+Primerament creem el nombre de workers que vulguem per després cridar al procediment que volem executar sobre el fitxer .txt que volguem analitzar.
 
 Per últim, per fer multiples execucions, cal:
 
