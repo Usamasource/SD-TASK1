@@ -35,5 +35,5 @@ python3 c.py job --wordcount http://localhost:8000/hola1.txt JOB_RUN
 
 Primerament creem el nombre de workers que volguem per després trucar al procediment que volem executar sobre el fitxer .txt que volguem executar.
 
-## License
+## Licencia
 [MIT](https://choosealicense.com/licenses/mit/)
