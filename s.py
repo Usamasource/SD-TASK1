@@ -73,20 +73,24 @@ class Master():
         proc.start()
 
         self.WORKERS[self.WORKER_ID]=proc
-        self.WORKER_ID=+1
+        self.WORKER_ID= self.WORKER_ID+1
 
     @app.route('/delete')
     def delete_worker(self):
-        if master.WORKERS[master.WORKER_ID] is not None:
-            if master.WORKERS[master.WORKER_ID].is_alive():
-                master.WORKERS[master.WORKER_ID].terminate()
-            master.WORKERS[master.WORKER_ID]=None
-            master.WORKERS_ID=-1
+        if master.WORKERS[master.WORKER_ID-1] is not None:
+            if master.WORKERS[master.WORKER_ID-1].is_alive():
+                master.WORKERS[master.WORKER_ID-1].terminate()
+            master.WORKERS[master.WORKER_ID-1]=None
+            master.WORKER_ID =master.WORKER_ID-1
 
     def list_workers(self):
-        for worker in self.WORKERS:
-            print(worker)
-            print(self.WORKERS[worker])
+        print("ID CONTADOR " + str(self.WORKER_ID))
+        reduced=defaultdict(int)
+        i=0
+        while i < self.WORKER_ID:
+            reduced[i]=self.WORKERS[i].name
+            i=i+1
+        return dict(reduced)
         
     def send_url(self, urls, task):
         ids=[]
@@ -129,6 +133,10 @@ def delete_w(n_workers):
     for i in range(n_workers):
         master.delete_worker()
 
+
+def list_workers():
+    return str(master.list_workers())
+
 def get_result(ids):
     results=[]
 
@@ -167,7 +175,7 @@ server.register_instance(master)
 server.register_function(create_w, 'create_w')
 server.register_function(delete_w, 'delete_w')
 server.register_function(get_result, 'get_result')
-
+server.register_function(list_workers, 'list_workers')
 # Run the server's main loop
 try:
     print('Use Control-C to exit')

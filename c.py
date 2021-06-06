@@ -18,11 +18,13 @@ def cli():
 def worker(worker, create, delete, list_w):
     if worker != None:
         if create != None:
+            print("Creating "  + str(create) + " workers" )
             s.create_w(create)
         if delete != None:
+            print("Deleting " + str(delete) + " workers" )
             s.delete_w(delete)
         if list_w:
-            s.list_workers()
+            print(s.list_workers())
 
 
 
