@@ -37,8 +37,8 @@ Primerament creem el nombre de workers que vulguem per després cridar al proced
 Per últim, per fer multiples execucions, cal:
 
 ```bash
-python3 c.py worker --create 2 WORKER
-python3 c.py job --wordcount http://localhost:8000/hola1.txt --wordcount http://localhost:8000/hola1.txt JOB_RUN
+python3 c.py worker --create [n_workers] WORKER
+python3 c.py job --wordcount http://localhost:8000/[fitxer1] --wordcount http://localhost:8000/[fitxer2] JOB_RUN
 ```
 
 ## Licencia
